@@ -6,6 +6,7 @@ import com.amazonaws.services.polly.AmazonPollyClient;
 import com.amazonaws.services.polly.model.OutputFormat;
 import com.amazonaws.services.polly.model.SynthesizeSpeechRequest;
 import com.amazonaws.services.polly.model.SynthesizeSpeechResult;
+import org.apache.commons.io.IOUtils;
 
 import java.io.*;
 
@@ -16,33 +17,31 @@ public class AmazonPolllySimpleJavaClient {
 
     private static final String accessKey = "";
     private static final String secretKey = "";
+    private static final String endpoint = "polly.eu-west-1.amazonaws.com";
 
     public static AWSCredentials awsCredentials;
 
-    public static void main(String[] args) throws IOException {
+    public static void synthesize(String voiceName, String text, String filepath) throws IOException {
         awsCredentials = new BasicAWSCredentials(accessKey, secretKey);
 
         SynthesizeSpeechRequest synthesizeSpeechRequest = new SynthesizeSpeechRequest();
         synthesizeSpeechRequest.setOutputFormat(OutputFormat.Mp3);
-        synthesizeSpeechRequest.setVoiceId("Maja");
-        synthesizeSpeechRequest.setText("Cześc jestem Amazon Polly");
+        synthesizeSpeechRequest.setVoiceId(voiceName);
+        synthesizeSpeechRequest.setText(text);
 
         AmazonPollyClient client = new AmazonPollyClient(awsCredentials);
-        client.setEndpoint("polly.eu-west-1.amazonaws.com");
+        client.setEndpoint(endpoint);
         SynthesizeSpeechResult synthesizeSpeechResult = client.synthesizeSpeech(synthesizeSpeechRequest);
         InputStream audioStream = synthesizeSpeechResult.getAudioStream();
 
-        OutputStream outputStream = new FileOutputStream(new File("/temp/aws-test.mp3"));
-        System.out.println(synthesizeSpeechResult.toString());
+        OutputStream outputStream = new FileOutputStream(new File(filepath));
+        IOUtils.copy(audioStream, outputStream);
+        audioStream.close();
+        outputStream.close();
+    }
 
-        byte[] buffer = new byte[2 * 1024];
-        int readBytes;
-
-        while ((readBytes = audioStream.read(buffer)) > 0) {
-            // In the example we are only printing the bytes counter,
-            // In real-life scenario we would operate on the buffer
-            System.out.println(" received bytes: " + readBytes);
-            outputStream.write(buffer, 0, readBytes);
-        }
+    public static void main(String[] args) throws IOException {
+        AmazonPolllySimpleJavaClient.synthesize(
+                "Justin", "Hi, I am Justin. Amazon Polly voice.", "/temp/aws-test.mp3");
     }
 }
